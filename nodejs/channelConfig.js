@@ -410,6 +410,9 @@ class ConfigFactory {
 exports.getChannelConfigReadable = async (channel, {peer, orderer}, viaServer) => {
 	let configEnvelope;
 	if (peer) {
+		if (peer && orderer) {
+			logger.warn(`getChannelConfigReadable: both peer and orderer is provided, reduce to use ${peer.getName()}`);
+		}
 		configEnvelope = await channel.getChannelConfig(peer);
 	} else {
 		channel._orderers = new Map();
@@ -422,7 +425,7 @@ exports.getChannelConfigReadable = async (channel, {peer, orderer}, viaServer) =
 	let configJSON;
 	if (viaServer) {
 		const body = await agent.decode.config(configProto);// body is a Buffer,
-		configJSON = JSON.stringify(JSON.parse(body));
+		configJSON = JSON.stringify(JSON.parse(body), null, 2);
 	} else {
 		const BinManager = require('./binManager');
 		const binManager = new BinManager();
@@ -449,7 +452,11 @@ exports.getChannelConfigReadable = async (channel, {peer, orderer}, viaServer) =
  * @param {Buffer} [envelope] A signed channel update config as a encoded grpc message. An example is output of `peer channel signconfigtx`
  * @returns {Promise<Client.BroadcastResponse>}
  */
-exports.channelUpdate = async (channel, orderer, configChangeCallback, signatureCollectCallback, {peer, client, viaServer} = {}, {config, signatures, envelope} = {}) => {
+exports.channelUpdate = async (channel, orderer, configChangeCallback, signatureCollectCallback, {peer, client, viaServer} = {}, {
+	config,
+	signatures,
+	envelope
+} = {}) => {
 
 	if (!client) {
 		client = channel._clientContext;
